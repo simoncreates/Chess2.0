@@ -78,6 +78,7 @@ def get_possible_moves(pos, player_pawns, ai_pawns, is_player_turn):
 
 
 def get_ai_move(tokens):
+    print("AI is thinking...")
     moves = [(x, y) for x in range(BOARD_SIZE) for y in range(BOARD_SIZE)]
     if tokens:
         # Filtere Züge mit positiven Gewichten
@@ -94,6 +95,7 @@ def get_ai_move(tokens):
     return move
 
 def make_ai_move(ai_pawns, player_pawns):
+    print("pawns attempt to move")
     if ai_pawns:
         selected_pawn = random.choice(list(ai_pawns))
         possible_moves = get_possible_moves(selected_pawn, player_pawns, ai_pawns, is_player_turn=False)
@@ -131,6 +133,7 @@ def main():
                 clicked_pos = (row, col)
                 if selected_pawn and clicked_pos in possible_moves:
                     print(f"Player moves {selected_pawn} to {clicked_pos}")
+                    is_player_turn = False
                     player_pawns.remove(selected_pawn)
                     player_pawns.add(clicked_pos)
                     # Check if an enemy pawn is captured
