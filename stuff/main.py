@@ -1,7 +1,7 @@
 import pygame
 import random
 
-# Konfiguration
+
 BOARD_SIZE = 8
 SQUARE_SIZE = 75
 WINDOW_SIZE = BOARD_SIZE * SQUARE_SIZE
@@ -12,14 +12,11 @@ RED = (255, 0, 0)
 GRAY = (100, 100, 100)
 FPS = 30
 
-# Initialisiere Pygame
 pygame.init()
 
-# Set up the display
 window = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
 pygame.display.set_caption('Bauernschach')
 
-# Zeichnet das Spielbrett und die Bauern
 def draw_board(window, player_pawns, ai_pawns, possible_moves=[]):
     window.fill(WHITE)
     for row in range(BOARD_SIZE):
@@ -33,32 +30,29 @@ def draw_board(window, player_pawns, ai_pawns, possible_moves=[]):
             if (row, col) in possible_moves:
                 pygame.draw.circle(window, GRAY, rect.center, SQUARE_SIZE // 8)
 
-# Prüft, ob ein Zug gültig ist
 def is_move_valid(move, player_pawns, ai_pawns, is_player_turn):
     row, col = move
     if not (0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE):
-        return False  # Zug ist außerhalb des Spielfelds
+        return False  
     if is_player_turn and move in player_pawns:
-        return False  # Ziel ist von einem eigenen Bauern besetzt
+        return False 
     if not is_player_turn and move in ai_pawns:
-        return False  # Ziel ist von einem eigenen Bauern besetzt
+        return False  
     return True
 
 
-# Aktualisiert den Zustand nach einem Zug
 def update_state(tokens, move, won):
     if won:
         if move in tokens:
             tokens[move] += 1
         else:
-            tokens[move] = 2  # Erster Sieg bekommt 2 Tokens, um Erfolg zu signalisieren
+            tokens[move] = 2  
     else:
         if move in tokens:
-            tokens[move] -= 1  # Ein Token wird entfernt, wenn der Zug zu einem Verlust führt
+            tokens[move] -= 1  
             if tokens[move] <= 0:
-                del tokens[move]  # Zug entfernen, wenn keine Tokens mehr vorhanden sind
+                del tokens[move] 
         else:
-            # Wenn der Zug nicht existiert, füge ihn mit einem negativen Wert hinzu, um einen Verlust zu signalisieren
             tokens[move] = -1
 
 def get_possible_moves(pos, player_pawns, ai_pawns, is_player_turn):
@@ -113,6 +107,27 @@ def make_ai_move(ai_pawns, player_pawns):
 
 
 
+def reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn):
+    player_pawns = {(7, 2), (7, 3), (7, 4), (7, 1), (7, 0), (7, 5), (7, 6), (7, 7)}
+    ai_pawns = {(0, 2), (0, 3), (0, 4), (0, 1), (0, 0), (0, 5), (0, 6), (0, 7)}
+    selected_pawn = None
+    possible_moves = []
+    is_player_turn = True
+    return player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def main():
     clock = pygame.time.Clock()
     player_pawns = {(7, 2), (7, 3), (7, 4), (7, 1), (7, 0), (7, 5), (7, 6), (7, 7)}
@@ -126,6 +141,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:  # Press 'R' to reset the game
+                    player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn = reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn)
             elif event.type == pygame.MOUSEBUTTONDOWN and is_player_turn:
                 pos = pygame.mouse.get_pos()
                 col = pos[0] // SQUARE_SIZE
