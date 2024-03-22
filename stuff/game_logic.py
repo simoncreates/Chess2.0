@@ -35,18 +35,35 @@ class Game:
                 moves.append(capture_pos)
         return moves
 
+    def get_pawn_at_position(self, position):
+        for pawn in self.pawns:
+            if pawn['position'] == position:
+                return pawn
+        return None
+        
+
     def make_move(self, pawn, new_pos):
-        if self.is_player_turn:
-            del self.player_pawns[pawn]
-            self.player_pawns[new_pos] = RED
-            if new_pos in self.enemy_pawns:
-                del self.enemy_pawns[new_pos]
-        else:
-            del self.enemy_pawns[pawn]
-            self.enemy_pawns[new_pos] = GREEN
-            if new_pos in self.player_pawns:
-                del self.player_pawns[new_pos]
+        attacking_pawn = self.get_pawn_at_position(new_pos)
+        if attacking_pawn:
+            # If there's an attacking pawn, set its health to 0 (effectively 'capturing' it)
+            attacking_pawn['health'] = 0
+        pawn['position'] = new_pos
+        self.remove_pawns_with_no_health()
         self.switch_turns()
+
+    def remove_pawns_with_no_health(self):
+        self.pawns = [pawn for pawn in self.pawns if pawn['health'] > 0]
+
+    def ai_make_move(self):
+        # Simplified AI move logic for demonstration
+        ai_pawns = [pawn for pawn in self.pawns if pawn['owner'] == 'enemy' and pawn['type'] == 0]
+        if ai_pawns:
+            pawn = random.choice(ai_pawns)
+            possible_moves = self.get_possible_moves(pawn['position'])
+            if possible_moves:
+                new_pos = random.choice(possible_moves)
+                self.make_move(pawn, new_pos)
+
 
     def ai_make_move(self):
         ai_pawn, ai_new_pos = random.choice(list(self.get_ai_moves().items()))
