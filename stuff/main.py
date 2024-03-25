@@ -69,21 +69,38 @@ def update_state(tokens, move, won):
         else:
             tokens[move] = -1
 
-# get possible moves
 def get_possible_moves(pos, player_pawns, ai_pawns, is_player_turn):
-    row, col = pos
-    direction = -1 if is_player_turn else 1  # Spieler bewegt sich nach oben (-1), KI nach unten (+1)
-    enemy_pawns = ai_pawns if is_player_turn else player_pawns
+    row, col, pawn_type, direction = pos  
     moves = []
+
+    direction_moves = {
+        0: (-1, 0), 
+        2: (1, 0), 
+        1: (0, 1), 
+        3: (0, -1) 
+    }
     
-    if (row + direction, col) not in player_pawns and (row + direction, col) not in ai_pawns and 0 <= row + direction < BOARD_SIZE:
-        moves.append((row + direction, col))
+    move_row, move_col = direction_moves[direction]
+    forward_pos = (row + move_row, col + move_col)
+    if forward_pos not in player_pawns and forward_pos not in ai_pawns and 0 <= forward_pos[0] < BOARD_SIZE and 0 <= forward_pos[1] < BOARD_SIZE:
+        moves.append(forward_pos)
     
-    if col - 1 >= 0 and (row + direction, col - 1) in enemy_pawns:
-        moves.append((row + direction, col - 1))
-    if col + 1 < BOARD_SIZE and (row + direction, col + 1) in enemy_pawns:
-        moves.append((row + direction, col + 1))
+    for d_col in [-1, 1]: 
+        capture_pos = (row + move_row, col + d_col)
+        if capture_pos in (ai_pawns if is_player_turn else player_pawns):
+            moves.append(capture_pos)
+
     return moves
+
+def reset_game():
+    player_pawns = {(7, col, 1, 0) for col in range(BOARD_SIZE)} 
+    ai_pawns = {(0, col, 1, 2) for col in range(BOARD_SIZE)}  
+    selected_pawn = None
+    possible_moves = []
+    is_player_turn = True
+    return player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn
+
+
 
 def make_ai_move(ai_pawns, player_pawns):
     print("pawns attempt to move")
@@ -103,8 +120,8 @@ def make_ai_move(ai_pawns, player_pawns):
             print("no possible moves")
 
 def reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn):
-    player_pawns = {(7, 2), (7, 3), (7, 4), (7, 1), (7, 0), (7, 5), (7, 6), (7, 7)}
-    ai_pawns = {(0, 2), (0, 3), (0, 4), (0, 1), (0, 0), (0, 5), (0, 6), (0, 7)}
+    player_pawns = {(7, 2, 2, 0), (7, 3, 1, 0), (7, 4, 1, 0), (7, 1, 1, 0), (7, 0, 1, 0), (7, 5, 1, 0), (7, 6, 1, 0), (7, 7, 1, 0)} #x, y, type, dir (0=north, 2=south)
+    ai_pawns = {(0, 2, 1, 2), (0, 3, 1, 2), (0, 4, 1, 2), (0, 1, 1, 2), (0, 0, 1, 2), (0, 5, 1, 2), (0, 6, 1, 2), (0, 7, 1, 2)}
     selected_pawn = None
     possible_moves = []
     is_player_turn = True
