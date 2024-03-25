@@ -1,7 +1,6 @@
 import pygame
 import random
 
-
 BOARD_SIZE = 8
 SQUARE_SIZE = 75
 WINDOW_SIZE = BOARD_SIZE * SQUARE_SIZE
@@ -16,6 +15,18 @@ pygame.init()
 
 window = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
 pygame.display.set_caption('Bauernschach')
+
+pawn_types = {
+    "standard": {
+        "advance": 1,
+        "capture": [(1, -1), (1, 1)]
+    },
+    "enhanced": {
+        "advance": 1,
+        "capture": [(1, -1), (1, 1)],
+        "special": [(1, -1), (1, 1)]  
+    }
+}
 
 def draw_board(window, player_pawns, ai_pawns, possible_moves=[]):
     window.fill(WHITE)
@@ -40,7 +51,6 @@ def is_move_valid(move, player_pawns, ai_pawns, is_player_turn):
         return False  
     return True
 
-
 def update_state(tokens, move, won):
     if won:
         if move in tokens:
@@ -60,33 +70,15 @@ def get_possible_moves(pos, player_pawns, ai_pawns, is_player_turn):
     direction = -1 if is_player_turn else 1  # Spieler bewegt sich nach oben (-1), KI nach unten (+1)
     enemy_pawns = ai_pawns if is_player_turn else player_pawns
     moves = []
-    # Geradeaus bewegen, wenn kein Bauer im Weg ist und das nächste Feld innerhalb des Bretts liegt
+    
     if (row + direction, col) not in player_pawns and (row + direction, col) not in ai_pawns and 0 <= row + direction < BOARD_SIZE:
         moves.append((row + direction, col))
-    # Diagonal bewegen, wenn gegnerischer Bauer vorhanden und das Zielfeld innerhalb des Bretts liegt
+    
     if col - 1 >= 0 and (row + direction, col - 1) in enemy_pawns:
         moves.append((row + direction, col - 1))
     if col + 1 < BOARD_SIZE and (row + direction, col + 1) in enemy_pawns:
         moves.append((row + direction, col + 1))
     return moves
-
-
-def get_ai_move(tokens):
-    print("AI is thinking...")
-    moves = [(x, y) for x in range(BOARD_SIZE) for y in range(BOARD_SIZE)]
-    if tokens:
-        # Filtere Züge mit positiven Gewichten
-        positive_weight_moves = {move: weight for move, weight in tokens.items() if weight > 0}
-        
-        if positive_weight_moves:  # Wenn es Züge mit positiven Gewichten gibt, verwende diese
-            moves = list(positive_weight_moves.keys())
-            weights = list(positive_weight_moves.values())
-            move = random.choices(moves, weights=weights)[0]
-        else:  # Keine Züge mit positiven Gewichten vorhanden, wähle zufällig aus allen möglichen Zügen
-            move = random.choice(moves)
-    else:
-        move = random.choice(moves)
-    return move
 
 def make_ai_move(ai_pawns, player_pawns):
     print("pawns attempt to move")
@@ -105,8 +97,6 @@ def make_ai_move(ai_pawns, player_pawns):
         else:
             print("no possible moves")
 
-
-
 def reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn):
     player_pawns = {(7, 2), (7, 3), (7, 4), (7, 1), (7, 0), (7, 5), (7, 6), (7, 7)}
     ai_pawns = {(0, 2), (0, 3), (0, 4), (0, 1), (0, 0), (0, 5), (0, 6), (0, 7)}
@@ -119,22 +109,13 @@ def reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_
 
 
 
-
-
-
-
-
-
-
-
-
 def main():
     clock = pygame.time.Clock()
     player_pawns = {(7, 2), (7, 3), (7, 4), (7, 1), (7, 0), (7, 5), (7, 6), (7, 7)}
     ai_pawns = {(0, 2), (0, 3), (0, 4), (0, 1), (0, 0), (0, 5), (0, 6), (0, 7)}
     selected_pawn = None
     possible_moves = []
-    is_player_turn = True  # Spieler beginnt
+    is_player_turn = True
     running = True
     while running:
         clock.tick(FPS)
