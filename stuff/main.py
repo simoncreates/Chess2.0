@@ -1,7 +1,7 @@
 import pygame
 import random
 
-
+# init variables for the game
 BOARD_SIZE = 8
 SQUARE_SIZE = 75
 WINDOW_SIZE = BOARD_SIZE * SQUARE_SIZE
@@ -12,11 +12,13 @@ RED = (255, 0, 0)
 GRAY = (100, 100, 100)
 FPS = 30
 
+# init pygame
 pygame.init()
 
+# create window
 window = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
 pygame.display.set_caption('Bauernschach')
-
+# draw board
 def draw_board(window, player_pawns, ai_pawns, possible_moves=[]):
     window.fill(WHITE)
     for row in range(BOARD_SIZE):
@@ -30,6 +32,8 @@ def draw_board(window, player_pawns, ai_pawns, possible_moves=[]):
             if (row, col) in possible_moves:
                 pygame.draw.circle(window, GRAY, rect.center, SQUARE_SIZE // 8)
 
+
+# check if move is valid
 def is_move_valid(move, player_pawns, ai_pawns, is_player_turn):
     row, col = move
     if not (0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE):
@@ -40,7 +44,7 @@ def is_move_valid(move, player_pawns, ai_pawns, is_player_turn):
         return False  
     return True
 
-
+# update game state
 def update_state(tokens, move, won):
     if won:
         if move in tokens:
@@ -55,6 +59,7 @@ def update_state(tokens, move, won):
         else:
             tokens[move] = -1
 
+# get possible moves
 def get_possible_moves(pos, player_pawns, ai_pawns, is_player_turn):
     row, col = pos
     direction = -1 if is_player_turn else 1  # Spieler bewegt sich nach oben (-1), KI nach unten (+1)
@@ -70,7 +75,7 @@ def get_possible_moves(pos, player_pawns, ai_pawns, is_player_turn):
         moves.append((row + direction, col + 1))
     return moves
 
-
+# get AI move
 def get_ai_move(tokens):
     print("AI is thinking...")
     moves = [(x, y) for x in range(BOARD_SIZE) for y in range(BOARD_SIZE)]
@@ -88,6 +93,7 @@ def get_ai_move(tokens):
         move = random.choice(moves)
     return move
 
+# make AI move
 def make_ai_move(ai_pawns, player_pawns):
     print("pawns attempt to move")
     if ai_pawns:
@@ -106,7 +112,7 @@ def make_ai_move(ai_pawns, player_pawns):
             print("no possible moves")
 
 
-
+# reset game
 def reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn):
     player_pawns = {(7, 2), (7, 3), (7, 4), (7, 1), (7, 0), (7, 5), (7, 6), (7, 7)}
     ai_pawns = {(0, 2), (0, 3), (0, 4), (0, 1), (0, 0), (0, 5), (0, 6), (0, 7)}
@@ -127,7 +133,7 @@ def reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_
 
 
 
-
+# main game loop
 def main():
     clock = pygame.time.Clock()
     player_pawns = {(7, 2), (7, 3), (7, 4), (7, 1), (7, 0), (7, 5), (7, 6), (7, 7)}
