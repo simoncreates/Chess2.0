@@ -40,7 +40,7 @@
         [2, 1, 0, 0], [1, 2, 0, 0], [-2, 1, 0, 0], [-1, 2, 0, 0],
         [2, -1, 0, 0], [1, -2, 0, 0], [-2, -1, 0, 0], [-1, -2, 0, 0]
       ],
-      "attackRange": 1,
+      "cooldownTime": 3,
       "appearance": {
         "baseShape": "circle",
         "overlays": [
@@ -58,7 +58,7 @@
         [0, 1, 1, 1], [1, 0, 1, 1], [0, -1, 1, 1], [-1, 0, 1, 1],  
         [1, 1, 1, 1], [-1, 1, 1, 1], [1, -1, 1, 1], [-1, -1, 1, 1] 
       ],
-      "attackRange": 3,
+      "cooldownTime": 3,
       "appearance": {
         "baseShape": "circle",
         "overlays": [
@@ -75,17 +75,17 @@
       "movementPatterns": [
         [0, 1, 1, 1] 
       ],
-      "attackRange": 1,
+      "cooldownTime": 3,
       "appearance": {
         "baseShape": "circle"
       }
     },
     "mage": {
       "movementPatterns": [
-        [0, 1, 3, 1], [1, 0, 3, 1], [0, -1, 3, 1], [-1, 0, 3, 1], 
-        [1, 1, 3, 1], [-1, 1, 3, 1], [1, -1, 3, 1], [-1, -1, 3, 1]  
+        [0, 5, 3, 0], [5, 0, 3, 0], [0, -5, 3, 0], [-5, 0, 3, 0], 
+        [5, 5, 3, 0], [-5, 5, 3, 0], [5, -5, 3, 0], [-5, -5, 3, 0]  
       ],
-      "attackRange": 2,
+      "cooldownTime": 3,
       "appearance": {
         "baseShape": "circle",
         "overlays": [
