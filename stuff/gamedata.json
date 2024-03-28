@@ -36,7 +36,10 @@
   ],
   "pawnTypes": {
     "knight": {
-      "movement": "L",
+      "movementPatterns": [
+        [2, 1, 0, 0], [1, 2, 0, 0], [-2, 1, 0, 0], [-1, 2, 0, 0],
+        [2, -1, 0, 0], [1, -2, 0, 0], [-2, -1, 0, 0], [-1, -2, 0, 0]
+      ],
       "attackRange": 1,
       "appearance": {
         "baseShape": "circle",
@@ -51,7 +54,10 @@
       }
     },
     "archer": {
-      "movement": "straight",
+      "movementPatterns": [
+        [0, 1, 1, 1], [1, 0, 1, 1], [0, -1, 1, 1], [-1, 0, 1, 1],  
+        [1, 1, 1, 1], [-1, 1, 1, 1], [1, -1, 1, 1], [-1, -1, 1, 1] 
+      ],
       "attackRange": 3,
       "appearance": {
         "baseShape": "circle",
@@ -60,20 +66,25 @@
             "shape": "line",
             "position": "across",
             "color": "fixed",
-            "fixedColor": [255, 255, 0] 
+            "fixedColor": [255, 255, 0]
           }
         ]
       }
     },
     "soldier": {
-      "movement": "forward",
+      "movementPatterns": [
+        [0, 1, 1, 1] 
+      ],
       "attackRange": 1,
       "appearance": {
         "baseShape": "circle"
       }
     },
     "mage": {
-      "movement": "diagonal",
+      "movementPatterns": [
+        [0, 1, 3, 1], [1, 0, 3, 1], [0, -1, 3, 1], [-1, 0, 3, 1], 
+        [1, 1, 3, 1], [-1, 1, 3, 1], [1, -1, 3, 1], [-1, -1, 3, 1]  
+      ],
       "attackRange": 2,
       "appearance": {
         "baseShape": "circle",
@@ -86,5 +97,5 @@
         ]
       }
     }
-  }
+  }  
 }
