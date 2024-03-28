@@ -1,184 +1,103 @@
 import pygame
-import random
+import pygame.draw
+import json
+import hashlib
 
-BOARD_SIZE = 8
-SQUARE_SIZE = 75
-WINDOW_SIZE = BOARD_SIZE * SQUARE_SIZE
+# Load game data
+with open('stuff/gamedata.json') as f:
+    game_data = json.load(f)
+
+# Game configuration
+pawn_types = game_data["pawnTypes"]
+SQUARE_AMOUNT = game_data["map"]["size"]
+WINDOW_SIZE = [500, 500]
+SQUARE_SIZE = WINDOW_SIZE[0] / SQUARE_AMOUNT[0]
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
-GRAY = (100, 100, 100)
-FPS = 30
 
-# init pygame
 pygame.init()
-
-# create window
-window = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
+window = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption('Bauernschach')
 
-pawn_types = {
-    "standard": {
-        "advance": 1,
-        "capture": [(1, -1), (1, 1)]
-    },
-    "enhanced": {
-        "advance": 1,
-        "capture": [(1, -1), (1, 1)],
-        "special": [(1, -1), (1, 1)]  
-    }
-}
+def string_to_colorful_color(input_string):
+    hash_object = hashlib.sha256(input_string.encode())
+    hex_dig = hash_object.hexdigest()
+    r_hash = int(hex_dig[0:2], 16)
+    g_hash = int(hex_dig[2:4], 16)
+    b_hash = int(hex_dig[4:6], 16)
+    fixed_component_index = sum(bytearray(input_string.encode())) % 3
+    colors = [r_hash, g_hash, b_hash]
 
-def draw_board(window, player_pawns, ai_pawns, possible_moves=[]):
+    for i in range(3):
+        if i == fixed_component_index:
+            colors[i] = max(25, colors[i]) 
+        else:
+            colors[i] = min(255, max(0, colors[i]))  
+    return tuple(colors)
+
+def draw_board(window, players, pawn_types):
     window.fill(WHITE)
-    for row in range(BOARD_SIZE):
-        for col in range(BOARD_SIZE):
+    for row in range(SQUARE_AMOUNT[0]):
+        for col in range(SQUARE_AMOUNT[1]):
             rect = pygame.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
             pygame.draw.rect(window, BLACK if (row + col) % 2 else WHITE, rect)
-            if (row, col) in player_pawns:
-                pygame.draw.circle(window, RED, rect.center, SQUARE_SIZE // 5)
-            elif (row, col) in ai_pawns:
-                pygame.draw.circle(window, GREEN, rect.center, SQUARE_SIZE // 4)
-            if (row, col) in possible_moves:
-                pygame.draw.circle(window, GRAY, rect.center, SQUARE_SIZE // 8)
 
+    for player in players:
+        player_color = string_to_colorful_color(player['name'])
+        for pawn in player['pawns']:
+            row, col = pawn['position']
+            pygame.draw.circle(window, player_color, (int(col * SQUARE_SIZE + SQUARE_SIZE / 2), int(row * SQUARE_SIZE + SQUARE_SIZE / 2)), int(SQUARE_SIZE // 4))
+            draw_pawn(window, pawn, player_color, pawn_types)
 
-# check if move is valid
-def is_move_valid(move, player_pawns, ai_pawns, is_player_turn):
-    row, col = move
-    if not (0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE):
-        return False  
-    if is_player_turn and move in player_pawns:
-        return False 
-    if not is_player_turn and move in ai_pawns:
-        return False  
-    return True
+def draw_shape(window, shape, position, size, color):
+    x, y = position
+    if shape == "triangle":
+        pygame.draw.polygon(window, color, [(x, y - size // 2), (x - size // 2, y + size // 2), (x + size // 2, y + size // 2)])
+    elif shape == "line":
+        pygame.draw.line(window, color, (x - size // 2, y), (x + size // 2, y), 5)
+    elif shape == "star":
+        pygame.draw.circle(window, color, (x, y), size // 3)
 
-def update_state(tokens, move, won):
-    if won:
-        if move in tokens:
-            tokens[move] += 1
-        else:
-            tokens[move] = 2  
-    else:
-        if move in tokens:
-            tokens[move] -= 1  
-            if tokens[move] <= 0:
-                del tokens[move] 
-        else:
-            tokens[move] = -1
+def draw_pawn(window, pawn, player_color, pawn_types):
+    row, col, pawn_type = pawn['position'][0], pawn['position'][1], pawn['type']
+    x = int(col * SQUARE_SIZE + SQUARE_SIZE / 2)
+    y = int(row * SQUARE_SIZE + SQUARE_SIZE / 2)
+    base_color = player_color
+    size = int(SQUARE_SIZE // 2)
 
-def get_possible_moves(pos, player_pawns, ai_pawns, is_player_turn):
-    row, col, pawn_type, direction = pos  
-    moves = []
+    pygame.draw.circle(window, base_color, (x, y), size // 2)  # Base shape
 
-    direction_moves = {
-        0: (-1, 0), 
-        2: (1, 0), 
-        1: (0, 1), 
-        3: (0, -1) 
-    }
-    
-    move_row, move_col = direction_moves[direction]
-    forward_pos = (row + move_row, col + move_col)
-    if forward_pos not in player_pawns and forward_pos not in ai_pawns and 0 <= forward_pos[0] < BOARD_SIZE and 0 <= forward_pos[1] < BOARD_SIZE:
-        moves.append(forward_pos)
-    
-    for d_col in [-1, 1]: 
-        capture_pos = (row + move_row, col + d_col)
-        if capture_pos in (ai_pawns if is_player_turn else player_pawns):
-            moves.append(capture_pos)
-
-    return moves
-
-def reset_game():
-    player_pawns = {(7, col, 1, 0) for col in range(BOARD_SIZE)} 
-    ai_pawns = {(0, col, 1, 2) for col in range(BOARD_SIZE)}  
-    selected_pawn = None
-    possible_moves = []
-    is_player_turn = True
-    return player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn
-
-
-
-def make_ai_move(ai_pawns, player_pawns):
-    print("pawns attempt to move")
-    if ai_pawns:
-        selected_pawn = random.choice(list(ai_pawns))
-        possible_moves = get_possible_moves(selected_pawn, player_pawns, ai_pawns, is_player_turn=False)
-        if possible_moves:
-            print(f"possible moves:  {possible_moves}")
-            print(f"AI selected pawn: {selected_pawn} with possible moves: {possible_moves}")
-            ai_pawns.remove(selected_pawn)
-            new_position = random.choice(possible_moves)
-            ai_pawns.add(new_position)
-            if new_position in player_pawns:
-                print(f"AI captures player pawn at: {new_position}")
-                player_pawns.remove(new_position)
-        else:
-            print("no possible moves")
-
-def reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn):
-    player_pawns = {(7, 2, 2, 0), (7, 3, 1, 0), (7, 4, 1, 0), (7, 1, 1, 0), (7, 0, 1, 0), (7, 5, 1, 0), (7, 6, 1, 0), (7, 7, 1, 0)} #x, y, type, dir (0=north, 2=south)
-    ai_pawns = {(0, 2, 1, 2), (0, 3, 1, 2), (0, 4, 1, 2), (0, 1, 1, 2), (0, 0, 1, 2), (0, 5, 1, 2), (0, 6, 1, 2), (0, 7, 1, 2)}
-    selected_pawn = None
-    possible_moves = []
-    is_player_turn = True
-    return player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn
-
+    if pawn_type in pawn_types and "appearance" in pawn_types[pawn_type]:
+        overlays = pawn_types[pawn_type]["appearance"].get("overlays", [])
+        for overlay in overlays:
+            shape = overlay["shape"]
+            if overlay.get("color") == "relative":
+                if "relativeColor" in overlay:
+                    relative_color = overlay["relativeColor"]
+                    overlay_color = (
+                        min(255, max(0, base_color[0] + relative_color[0])),
+                        min(255, max(0, base_color[1] + relative_color[1])),
+                        min(255, max(0, base_color[2] + relative_color[2])),
+                    )
+                else:
+                    overlay_color = base_color
+            else:
+                overlay_color = pygame.Color(*overlay.get("fixedColor", base_color))
+            draw_shape(window, shape, (x, y), size, overlay_color)
 
 
 
 
 def main():
-    clock = pygame.time.Clock()
-    player_pawns = {(7, 2), (7, 3), (7, 4), (7, 1), (7, 0), (7, 5), (7, 6), (7, 7)}
-    ai_pawns = {(0, 2), (0, 3), (0, 4), (0, 1), (0, 0), (0, 5), (0, 6), (0, 7)}
-    selected_pawn = None
-    possible_moves = []
-    is_player_turn = True
+    players = game_data["players"]
+    
     running = True
     while running:
-        clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:  # Press 'R' to reset the game
-                    player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn = reset_game(player_pawns, ai_pawns, selected_pawn, possible_moves, is_player_turn)
-            elif event.type == pygame.MOUSEBUTTONDOWN and is_player_turn:
-                pos = pygame.mouse.get_pos()
-                col = pos[0] // SQUARE_SIZE
-                row = pos[1] // SQUARE_SIZE
-                clicked_pos = (row, col)
-                if selected_pawn and clicked_pos in possible_moves:
-                    print(f"Player moves {selected_pawn} to {clicked_pos}")
-                    is_player_turn = False
-                    player_pawns.remove(selected_pawn)
-                    player_pawns.add(clicked_pos)
-                    # Check if an enemy pawn is captured
-                    if clicked_pos in ai_pawns:
-                        print(f"Player captures AI pawn at: {clicked_pos}")
-                        ai_pawns.remove(clicked_pos)
-                        is_player_turn = False
-                        selected_pawn = None
-                        possible_moves = []
-                    else:
-                        selected_pawn = None
-                        possible_moves = []
-                elif clicked_pos in player_pawns:
-                    selected_pawn = clicked_pos
-                    possible_moves = get_possible_moves(selected_pawn, player_pawns, ai_pawns, is_player_turn)
 
-        # KI macht ihren Zug nach dem Spieler
-        if not is_player_turn:
-            print(f"Before AI Move: Player Pawns: {player_pawns}, AI Pawns: {ai_pawns}")
-            make_ai_move(ai_pawns, player_pawns)
-            print(f"After AI Move: Player Pawns: {player_pawns}, AI Pawns: {ai_pawns}")
-            is_player_turn = True
-
-        draw_board(window, player_pawns, ai_pawns, possible_moves)
+        draw_board(window, players, pawn_types)
         pygame.display.flip()
 
     pygame.quit()

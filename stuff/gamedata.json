@@ -1,0 +1,77 @@
+{
+  "map": {
+    "size": [8, 8],
+    "obstacles": [[2, 3], [4, 5], [6, 7]]
+  },
+  "players": [
+    {
+      "id": 1,
+      "name": "123",
+      "pawns": [
+        {"position": [7, 2], "type": "knight", "health": 100, "downtime": 0},
+        {"position": [7, 3], "type": "archer", "health": 80, "downtime": 0}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "789",
+      "pawns": [
+        {"position": [0, 2], "type": "knight", "health": 100, "downtime": 0},
+        {"position": [0, 3], "type": "archer", "health": 70, "downtime": 2}
+      ]
+    }
+  ],
+  "pawnTypes": {
+    "knight": {
+      "movement": "L",
+      "attackRange": 1,
+      "appearance": {
+        "baseShape": "circle",
+        "overlays": [
+          {
+            "shape": "triangle",
+            "position": "top",
+            "color": "relative",
+            "relativeColor": [0, 0, 0]
+          }
+        ]
+      }
+    },
+    "archer": {
+      "movement": "straight",
+      "attackRange": 3,
+      "appearance": {
+        "baseShape": "circle",
+        "overlays": [
+          {
+            "shape": "line",
+            "position": "across",
+            "color": "fixed",
+            "fixedColor": [255, 255, 0] 
+          }
+        ]
+      }
+    },
+    "soldier": {
+      "movement": "forward",
+      "attackRange": 1,
+      "appearance": {
+        "baseShape": "circle"
+      }
+    },
+    "mage": {
+      "movement": "diagonal",
+      "attackRange": 2,
+      "appearance": {
+        "baseShape": "circle",
+        "overlays": [
+          {
+            "shape": "star",
+            "position": "center",
+            "color": "relative"
+          }
+        ]
+      }
+    }
+  }
+}
