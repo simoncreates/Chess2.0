@@ -85,22 +85,61 @@ def draw_pawn(window, pawn, player_color, pawn_types):
                 overlay_color = pygame.Color(*overlay.get("fixedColor", base_color))
             draw_shape(window, shape, (x, y), size, overlay_color)
 
+def get_click_position(event):
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: 
+        pixel_x, pixel_y = event.pos
+        grid_x = pixel_x // SQUARE_SIZE
+        grid_y = pixel_y // SQUARE_SIZE
+        return pixel_x, pixel_y, grid_x, grid_y
+    else:
+        return None
+
+def human_turn(player, event):
+    # This function now handles only the event checking and response
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.button == 1:  # Left click
+            click_position = get_click_position(event)
+            if click_position:
+                _, _, grid_x, grid_y = click_position
+                pawn_clicked = False
+                for pawn in player['pawns']:
+                    if pawn['position'] == [grid_y, grid_x]:  # Grid coordinates match
+                        pawn_clicked = True
+                        if pawn['downtime'] == 0:
+                            print(f"Pawn at {grid_x}, {grid_y} with no cooldown was clicked.")
+                        else:
+                            print(f"Pawn at {grid_x}, {grid_y} clicked but it's still cooling down. Cooldown: {pawn['downtime']}")
+                if not pawn_clicked:
+                    print("No pawn was clicked.")
+        elif event.button == 3:  # Right click
+            print("Skipping to next player's turn.")
+            return True  # Indicates the turn is completed and it should proceed to the next player
+    return False  # Indicates the turn is not yet completed
+
 def main():
     players = game_data["players"]
-    current_turn = 0  # Index of the current player in the players list
+    current_turn = 0
 
     running = True
     while running:
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if players[current_turn]["type"] == "human":
-                    print(f"Human player {players[current_turn]['name']} action handled.")
-                    current_turn = (current_turn + 1) % len(players)
-                    
-        if players[current_turn]["type"] == "ai":
+        
+        if players[current_turn]["type"] == "human":
+            turn_ended = False
+            for event in events:
+                # Process events for the human turn
+                if human_turn(players[current_turn], event):
+                    turn_ended = True
+                    break  # Exit the loop if the turn has ended
+            if turn_ended:
+                current_turn = (current_turn + 1) % len(players)  # Move to the next player
+        else:
+            # AI player logic
             print(f"AI player {players[current_turn]['name']}'s turn.")
+            # Add AI actions here
             current_turn = (current_turn + 1) % len(players)
 
         draw_board(window, players, pawn_types)

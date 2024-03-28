@@ -18,8 +18,8 @@
       "name": "Dönermann Ali",
       "type": "human",
       "pawns": [
-        {"position": [7, 2], "type": "knight", "health": 100, "downtime": 0},
-        {"position": [7, 3], "type": "archer", "health": 80, "downtime": 0}
+        {"position": [2, 7], "type": "knight", "health": 100, "downtime": 0},
+        {"position": [3, 7], "type": "archer", "health": 80, "downtime": 0}
       ]
     },
     {
