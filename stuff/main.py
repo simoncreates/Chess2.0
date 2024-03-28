@@ -85,22 +85,29 @@ def draw_pawn(window, pawn, player_color, pawn_types):
                 overlay_color = pygame.Color(*overlay.get("fixedColor", base_color))
             draw_shape(window, shape, (x, y), size, overlay_color)
 
-
-
-
 def main():
     players = game_data["players"]
-    
+    current_turn = 0  # Index of the current player in the players list
+
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if players[current_turn]["type"] == "human":
+                    print(f"Human player {players[current_turn]['name']} action handled.")
+                    current_turn = (current_turn + 1) % len(players)
+                    
+        if players[current_turn]["type"] == "ai":
+            print(f"AI player {players[current_turn]['name']}'s turn.")
+            current_turn = (current_turn + 1) % len(players)
 
         draw_board(window, players, pawn_types)
         pygame.display.flip()
 
     pygame.quit()
+
 
 if __name__ == '__main__':
     main()
