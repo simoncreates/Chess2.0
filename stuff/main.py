@@ -5,7 +5,9 @@ import json
 import hashlib
 import random
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from keras import layers, models
+from keras.models import Sequential
+from keras.layers import Dense
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
@@ -103,7 +105,7 @@ def ai_turn(player, model, game_data):
     # Generate possible moves for all pawns.
     possible_moves = []
     for pawn in player['pawns']:
-        moves_for_pawn = calculate_possible_moves(pawn, game_data['players'], game_data['pawnTypes'], game_data['current_turn'])
+        moves_for_pawn = calculate_possible_moves(pawn, game_data['players'], game_data['pawnTypes'], game_data['current_turn'], game_data)
         for move in moves_for_pawn:
             possible_moves.append((pawn, move[0], move[1]))
     print(f"Possible moves calculated: {possible_moves}")
@@ -161,7 +163,13 @@ def play_game(ai_1, ai_2, game_data, score_board):
     game_draw = False  # Flag to indicate if the game ends in a draw
 
     print("Starting a new game.")
-    game_data['current_turn'] = 0
+    game_data = initialize_ai_game()  # oder initialize_game(), je nach Ihrem Szenario
+    if game_data is None:
+        print("Fehler: game_data konnte nicht initialisiert werden.")
+        exit(1)  # Beendet das Programm, da game_data essentiell ist
+    else:
+        game_data['current_turn'] = 0  # Jetzt können Sie sicher darauf zugreifen
+
 
     while not check_game_over(game_data['players']):
         for event in pygame.event.get():
@@ -226,15 +234,33 @@ def train_ais(game_data, num_ais=50, generations=10):
     # Initialization code for create_model, initialize_ai_game, and reproduce_ais goes here
     # Placeholder for the actual AI model creation function
     def create_model(input_shape, num_actions):
-        pass
+        model = Sequential([
+            Dense(64, activation='relu', input_shape=input_shape),
+            Dense(64, activation='relu'),
+            Dense(num_actions, activation='softmax')
+        ])
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        return model
 
-    # Placeholder for the game initialization function
     def initialize_ai_game():
-        pass
+        # Beispiel für Spielinitialisierung; Anpassen nach Bedarf
+        game_data = {
+        'players': [{'id': 1, 'pawns': []}, {'id': 2, 'pawns': []}],
+        'map': {'size': (8, 8)},
+        'current_turn': 0,
+        }
+        return game_data
 
     # Placeholder for the function to reproduce AIs for the next generation
     def reproduce_ais(top_ais):
-        pass
+        new_ais = []
+        for ai in top_ais:
+            # Klonen des Modells
+            new_model = tf.keras.models.clone_model(ai)
+            new_model.set_weights(ai.get_weights())
+            new_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    
+    # Mutation könnte hier implementiert werden, indem man zufällig Gewichte anpasst
 
     # Assuming a maximum of 50 actions
     max_possible_actions = 50  # Adjust based on your game's logic
@@ -322,7 +348,8 @@ def draw_board(window, players, pawn_types, current_turn):
     for move in possible_moves:
         _, move_y, move_x = move  # Adjusted to unpack the full structure of each 'move'
         center_position = (int(move_x * SQUARE_SIZE + SQUARE_SIZE / 2), int(move_y * SQUARE_SIZE + SQUARE_SIZE / 2))
-        pygame.draw.circle(window, (0, 255, 0), center_position, int(SQUARE_SIZE // 8))
+        pygame.draw.circle(window, (0, 255, 0), center_position, int(SQUARE_SIZE // 8))    
+    current_turn = (current_turn + 1) % len(players)
     current_player_color = string_to_colorful_color(players[current_turn]['name'])
     indicator_size = (50, 50)
     pygame.draw.rect(window, current_player_color, pygame.Rect(10, 10, indicator_size[0], indicator_size[1]))
@@ -370,35 +397,46 @@ def get_click_position(event):
     else:
         return None
     
-def calculate_possible_moves(pawn, players, pawn_types, current_turn):
-    possible_moves = []
-    y, x = pawn['position'] 
-    pawn_type_rules = pawn_types[pawn['type']]['movementPatterns']
+def calculate_possible_moves(pawn, players, pawn_types, current_turn, game_data):
+    player = None
+    if 'current_turn' in game_data:
+        current_player_index = game_data['current_turn'] % len(players)
+        if current_player_index < len(players):
+            player = players[current_player_index]
+        else:
+            print(f"Fehler: Ungültiger Spielerindex {current_player_index}")
+            return []
+    else:
+        print("Fehler: 'current_turn' fehlt in game_data.")
+        return []
 
-    friendly_positions = [tuple(p['position']) for p in players[current_turn]['pawns']]
-    enemy_positions = [tuple(p['position']) for player in players if player != players[current_turn] for p in player['pawns']]
+    possible_moves = []
+    y, x = pawn['position']
+    pawn_type_rules = pawn_types[pawn['type']]['movementPatterns']
+    
+    # Definiere friendly_positions basierend auf dem aktuellen Spieler
+    friendly_positions = [tuple(p['position']) for p in player['pawns']]
+
+    # Definiere enemy_positions basierend auf allen anderen Spielern außer dem aktuellen
+    enemy_positions = [tuple(p['position']) for p in itertools.chain.from_iterable(pl['pawns'] for pl in players if pl != player)]
 
     for dx, dy, move_type, _ in pawn_type_rules:
         new_x = x + dx
         new_y = y + dy
 
-        if 0 <= new_x < SQUARE_AMOUNT[1] and 0 <= new_y < SQUARE_AMOUNT[0]:  
+        if 0 <= new_x < SQUARE_AMOUNT[1] and 0 <= new_y < SQUARE_AMOUNT[0]:
             new_pos = (new_y, new_x)
 
             if move_type == 0:
-                #can move when there is no friendly pawn
                 if new_pos not in friendly_positions:
                     possible_moves.append(new_pos)
             elif move_type == 1:
-                #Can only move if unoccupied
                 if new_pos not in friendly_positions and new_pos not in enemy_positions:
                     possible_moves.append(new_pos)
             elif move_type == 2:
-                #Can only move if occupied by an enemy pawn
                 if new_pos in enemy_positions:
                     possible_moves.append(new_pos)
             elif move_type == 3:
-                #like rookor queen
                 direction_x = 1 if dx > 0 else -1 if dx < 0 else 0
                 direction_y = 1 if dy > 0 else -1 if dy < 0 else 0
 
@@ -406,21 +444,19 @@ def calculate_possible_moves(pawn, players, pawn_types, current_turn):
                 while True:
                     step_x += direction_x
                     step_y += direction_y
-                    # Stop if out of bounds
                     if not (0 <= step_x < SQUARE_AMOUNT[1] and 0 <= step_y < SQUARE_AMOUNT[0]):
                         break
                     next_pos = (step_y, step_x)
-                    # Stop if reaching a friendly piece
                     if next_pos in friendly_positions:
                         break
                     possible_moves.append(next_pos)
-                    # Stop if reaching an enemy piece - can capture
                     if next_pos in enemy_positions:
                         break
-                    # Stop if the move has reached its maximum distance relative to its start
                     if (abs(step_x - x) == abs(dx) and dx != 0) or (abs(step_y - y) == abs(dy) and dy != 0):
                         break
+
     return possible_moves
+
 
 def execute_move(decision, players, current_turn):
     print(f"Executing move: {decision} for players at turn {current_turn}")
