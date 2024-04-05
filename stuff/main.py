@@ -54,7 +54,22 @@ pygame.display.set_caption('Bauernschach')
 
 
 
+def draw_progress_bar(window, position, size, progress, bg_color=(200, 200, 200), fg_color=(50, 150, 50)):
+    """
+    Zeichnet einen Fortschrittsbalken in einem Pygame-Fenster.
 
+    :param window: Das Pygame Fenster, in dem der Balken gezeichnet wird.
+    :param position: Tupel (x, y) mit der Position der oberen linken Ecke des Balkens.
+    :param size: Tupel (Breite, Höhe) des Balkens.
+    :param progress: Fortschrittsprozentsatz als float zwischen 0.0 und 1.0.
+    :param bg_color: Hintergrundfarbe des Balkens.
+    :param fg_color: Vordergrundfarbe des Balkens.
+    """
+    pygame.draw.rect(window, bg_color, (*position, *size))  # Zeichnet den Hintergrund des Balkens
+    fill_width = int(size[0] * progress)
+    pygame.draw.rect(window, fg_color, (position[0], position[1], fill_width, size[1]))  # Zeichnet den gefüllten Bereich
+    
+    pygame.display.update()  # Aktualisiert den Teil des Fensters, der den Balken enthält
 
 
 def get_game_state_input(players, current_turn, SQUARE_AMOUNT):
@@ -191,7 +206,7 @@ def play_game(ai_1, ai_2, game_data, score_board):
             game_draw = True
             break
 
-        draw_board(window, game_data['players'], pawn_types, game_data['current_turn'])  # Draw the current game state
+        draw_board(window, game_data['players'], pawn_types, game_data['current_turn'], completed_generations)  # Draw the current game state
         pygame.display.flip()  # Update the display with the new drawing
 
         game_data['current_turn'] += 1
@@ -204,8 +219,6 @@ def play_game(ai_1, ai_2, game_data, score_board):
         print("Game over.")
 
     return game_draw
-
-
 
 
 def evolve_ais(ais):
@@ -227,7 +240,8 @@ def evolve_ais(ais):
     
     return new_generation
 
-def train_ais(game_data, num_ais=50, generations=10):
+def train_ais(game_data, num_ais=5, generations=25):
+    global completed_generations  # Ensure 'completed_generations' is accessible, defined globally or passed as an argument
     # Assuming SQUARE_AMOUNT is defined elsewhere in your code
     SQUARE_AMOUNT = (8, 8)  # Example for a chess board, update as necessary
 
@@ -252,15 +266,41 @@ def train_ais(game_data, num_ais=50, generations=10):
         return game_data
 
     # Placeholder for the function to reproduce AIs for the next generation
-    def reproduce_ais(top_ais):
-        new_ais = []
+    def reproduce_ais(top_ais, input_shape, num_possible_moves):
+        new_generation = []
         for ai in top_ais:
-            # Klonen des Modells
-            new_model = tf.keras.models.clone_model(ai)
-            new_model.set_weights(ai.get_weights())
-            new_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    
-    # Mutation könnte hier implementiert werden, indem man zufällig Gewichte anpasst
+            # Original unverändert hinzufügen
+            new_generation.append(ai)
+            
+            # Kopie erstellen und mutieren
+            mutated_ai = create_model(input_shape, num_possible_moves)
+            mutated_ai.set_weights(ai.get_weights())  # Kopiere Gewichte
+            
+            # Führe eine Mutation durch (Beispielhaft)
+            mutate_model(mutated_ai)  # Diese Funktion passt die Gewichte geringfügig an
+            
+            new_generation.append(mutated_ai)
+        return new_generation
+
+    # hier ist eine beispielfunktion für mutation, aber diese wird noch nicht verwendet.
+    def mutate_model(model, mutation_rate=0.1, mutation_amount=0.02):
+        weights = model.get_weights()
+        mutated_weights = []
+        for weight in weights:
+            if np.random.rand() < mutation_rate:
+                mutation = np.random.normal(loc=0.0, scale=mutation_amount, size=weight.shape)
+                weight += mutation
+            mutated_weights.append(weight)
+        model.set_weights(mutated_weights)
+
+    def simulate_game(ai_model, game_data):
+        """
+        Simuliere ein Spiel mit dem gegebenen KI-Modell und gib eine Bewertung (Punktzahl) zurück.
+        Diese Funktion muss basierend auf deinem Spiel implementiert werden.
+        """
+        # Beispiel: Generiere eine zufällige Punktzahl für die Demonstration
+        score = np.random.randint(0, 100)
+        return score
 
     # Assuming a maximum of 50 actions
     max_possible_actions = 50  # Adjust based on your game's logic
@@ -273,6 +313,8 @@ def train_ais(game_data, num_ais=50, generations=10):
 
     for generation in range(generations):
         print(f"Starting generation {generation + 1}")
+        completed_generations = generation
+        
         scores.fill(0)  # Reset scores each generation
         score_board.fill(0)  # Reset scoreboard each generation
 
@@ -312,13 +354,6 @@ def train_ais(game_data, num_ais=50, generations=10):
 
 
 
-
-
-
-
-
-
-
 def string_to_colorful_color(input_string):
     hash_object = hashlib.sha256(input_string.encode())
     hex_dig = hash_object.hexdigest()
@@ -334,7 +369,7 @@ def string_to_colorful_color(input_string):
             colors[i] = min(255, max(0, colors[i]))  
     return tuple(colors)
 
-def draw_board(window, players, pawn_types, current_turn):
+def draw_board(window, players, pawn_types, current_turn, completed_generations):
     window.fill(WHITE)
     for row in range(SQUARE_AMOUNT[0]):
         for col in range(SQUARE_AMOUNT[1]):
@@ -353,6 +388,10 @@ def draw_board(window, players, pawn_types, current_turn):
     current_player_color = string_to_colorful_color(players[current_turn]['name'])
     indicator_size = (50, 50)
     pygame.draw.rect(window, current_player_color, pygame.Rect(10, 10, indicator_size[0], indicator_size[1]))
+
+    bar_position = (50, WINDOW_SIZE[1] - 40)  # Setzt die Position des Fortschrittsbalkens
+    bar_size = (WINDOW_SIZE[0] - 100, 20)  # Breite des Fortschrittsbalkens
+    draw_progress_bar(window, bar_position, bar_size, progress=(completed_generations + 1) / 25)  # Zeichnet den Fortschrittsbalken (25 Generationen insgesamt)
 
 def draw_shape(window, shape, position, size, color):
     x, y = position
@@ -631,7 +670,7 @@ def main():
                 ai_turn(players[current_turn], selected_ai, game_data)  # AI takes its turn
                 current_turn = (current_turn + 1) % len(players)
                 
-        draw_board(window, players, pawn_types, current_turn)
+        draw_board(window, players, pawn_types, current_turn, completed_generations)
         pygame.display.flip()
 
     pygame.quit()
